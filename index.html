@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Experiment JQuery CRUD with an existing API</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Experiment JQuery CRUD with an existing API</h1>
+  
+  <form id="user-form">
+    <input type="text" name="name" placeholder="Name">
+    <input type="text" name="username" placeholder="Username">
+    <input type="email" name="email" placeholder="Email">
+    <input type="text" name="phone" placeholder="Phone">
+    <button type="submit">Add User</button>
+  </form>
+  
+  <table id="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  
+  <script>
+    // Get all users and display them in the table
+    $.get("https://jsonplaceholder.typicode.com/users", function(users) {
+      $.each(users, function(index, user) {
+        displayUser(user);
+      });
+    });
+    
+    // Submit the form to add a new user
+    $("#user-form").submit(function(event) {
+      event.preventDefault();
+      
+      var user = {
+        name: $("input[name='name']").val(),
+        username: $("input[name='username']").val(),
+        email: $("input[name='email']").val(),
+        phone: $("input[name='phone']").val()
+      };
+      
+      $.post("https://jsonplaceholder.typicode.com/users", user, function(newUser) {
+        displayUser(newUser);
+        $("#user-form")[0].reset();
+      });
+    });
+    
+    // Display a user in the table
+    function displayUser(user) {
+      var row = $("<tr>");
+      $("<td>").text(user.id).appendTo(row);
+      $("<td>").text(user.name).appendTo(row);
+      $("<td>").text(user.username).appendTo(row);
+      $("<td>").text(user.email).appendTo(row);
+      $("<td>").text(user.phone).appendTo(row);
+      var actions = $("<td>");
+      $("<button>").text("Edit").click(function() {
+        editUser(user);
+      }).appendTo(actions);
+      $("<button>").text("Delete").click(function() {
+        deleteUser(user);
+      }).appendTo(actions);
+      actions.appendTo(row);
+      row.appendTo("#user-table tbody");
+    }
+    
+    // Edit a user
+    function editUser(user) {
+      var newName = prompt("Enter new name", user.name);
+      if (newName !== null) {
+        user.name = newName;
+        $.ajax({
+          url: "https://jsonplaceholder.typicode.com/users/" + user.id,
+          method: "PUT",
+          data: user,
+          success: function(updatedUser) {
+            $("tr:contains('" + user.name + "')").replaceWith(displayUser(updatedUser));
+          }
+        });
+      }
+    }
+    
+    // Delete a user
+    function deleteUser(user) {
+      if (confirm("Are you sure you want to delete " + user.name + "?")) {
+        $.ajax({
+          url: "https://jsonplaceholder.typicode.com/users/" + user.id,
+          method: "DELETE",
+          success: function() {
+            $("tr[data-user-id='" + user.id + "']").remove();
+          }
